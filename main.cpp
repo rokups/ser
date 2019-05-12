@@ -136,7 +136,7 @@ public:
 
         // This would also work
         // unsigned i = 0;
-        // for (auto it = archive->BeginArray(); !it.AtEnd(); ++it)
+        // for (auto it = archive->Begin(Archive::Array); !it.AtEnd(); ++it)
         // {
         //    archive->Serialize(it++, arr[i++]);
         //    archive->Serialize(it++, arr[i++]);
@@ -169,7 +169,7 @@ void test()
     assert(obj_out.value1 == obj_in.value1);
     assert(obj_out.value2 == obj_in.value2);
     assert(obj_out.value3 == obj_in.value3);
-    //assert(obj_out.user.userValue == obj_in.user.userValue);
+    assert(obj_out.user.userValue == obj_in.user.userValue);
 }
 
 int main()
