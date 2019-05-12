@@ -117,6 +117,8 @@ public:
     detail::IArchiveIterator* operator->()                     { return Get(); }
     /// Returns instance of internal archive iterator.
     const detail::IArchiveIterator* operator->() const         { return Get(); }
+    /// Returns true if iterator is null or at an end.
+    bool AtEnd() const                                         { return is_null_ || Get()->AtEnd(); }
     /// Returns true if iterator is not null and not at an end.
     operator bool() const                              { return !is_null_ && !Get()->AtEnd(); }                         // NOLINT(google-explicit-constructor)
     /// Returns new archive iterator at specified index. Returns null iterator if this instance is not iterating an array.
