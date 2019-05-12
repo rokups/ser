@@ -59,6 +59,12 @@ protected:
     friend class ::ser::ArchiveIterator;
 };
 
+inline constexpr unsigned SDBMHash(unsigned hash, unsigned char c) { return c + (hash << 6u) + (hash << 16u) - hash; }
+inline constexpr unsigned SDBMHash(const char* str, unsigned hash = 0)
+{
+    return str == nullptr || *str == 0 ? hash : SDBMHash(str + 1, SDBMHash(hash, (unsigned char)*str));
+}
+
 template<typename T>
 static const char* type_name()
 {
@@ -67,6 +73,11 @@ static const char* type_name()
 #else
     return __PRETTY_FUNCTION__;
 #endif
+}
+template<typename T>
+static unsigned type_id()
+{
+    return SDBMHash(type_name<T>());
 }
 
 }   // namespace detail
@@ -120,15 +131,15 @@ public:
     /// Returns true if iterator is null or at an end.
     bool AtEnd() const                                         { return is_null_ || Get()->AtEnd(); }
     /// Returns true if iterator is not null and not at an end.
-    operator bool() const                              { return !is_null_ && !Get()->AtEnd(); }                         // NOLINT(google-explicit-constructor)
+    operator bool() const                                      { return !AtEnd(); }                         // NOLINT(google-explicit-constructor)
     /// Returns new archive iterator at specified index. Returns null iterator if this instance is not iterating an array.
-    ArchiveIterator operator[](int index)              { return Get()->operator[](index); }
+    ArchiveIterator operator[](int index)                      { return Get()->operator[](index); }
     /// Returns new archive iterator at specified key. Returns null iterator if this instance is not iterating a map.
-    ArchiveIterator operator[](const std::string& key) { return Get()->Find(key); }
+    ArchiveIterator operator[](const std::string& key)         { return Get()->Find(key); }
     /// Returns new archive iterator at specified key. Returns null iterator if this instance is not iterating a map.
-    ArchiveIterator operator[](const char* key)        { return Get()->Find(key); }
+    ArchiveIterator operator[](const char* key)                { return Get()->Find(key); }
     /// Increments this iterator in-place and returns reference to itself.
-    ArchiveIterator& operator++()                      { Get()->operator++(); return *this; }
+    ArchiveIterator& operator++()                              { Get()->operator++(); return *this; }
     /// Returns a copy of current iterator and increments this instance afterwards.
     ArchiveIterator operator++(int i)                                                                                   // NOLINT(cert-dcl21-cpp)
     {
@@ -159,7 +170,7 @@ public:
         Map,
     };
 
-    using UserTypeSerializers = std::unordered_map<const char*, bool(*)(Archive*, ArchiveIterator&, void*)>;
+    using UserTypeSerializers = std::unordered_map<unsigned, bool(*)(Archive*, ArchiveIterator&, void*)>;
 
     /// Begin iteration of a root container.
     virtual ArchiveIterator Begin(ContainerType type) = 0;
@@ -178,30 +189,33 @@ public:
     virtual bool Serialize(ArchiveIterator&& it, float& value) = 0;
     virtual bool Serialize(ArchiveIterator&& it, double& value) = 0;
     virtual bool Serialize(ArchiveIterator&& it, std::string& value) = 0;
-    virtual bool Serialize(ArchiveIterator&& it, const char* typeName, void* value) = 0;
+    virtual bool Serialize(ArchiveIterator&& it, unsigned typeId, void* value) = 0;
 
     /// Serialize user-defined type. Type must be registered with SER_USER_TYPE_SERIALIZER() macro.
     template<typename T>
     bool Serialize(ArchiveIterator&& it, T& value)
     {
-        return Serialize((ArchiveIterator&&)it, detail::type_name<T>(), (void*)&value);
+        return Serialize((ArchiveIterator&&)it, detail::type_id<T>(), (void*)&value);
     }
 };
 
 // Macro that implements user type serialization in format-specific archives. Simply add this macro to class body.
 #define SER_USER_CONTAINER(Type)                                                                      \
 public:                                                                                               \
-    bool Serialize(ArchiveIterator&& it, const char* typeName, void* value) override                  \
+    bool Serialize(ArchiveIterator&& it, unsigned typeId, void* value) override                       \
     {                                                                                                 \
         if (!it)                                                                                      \
             return false;                                                                             \
-        return GetSerializers()[typeName](this, it, value);                                           \
+        return GetSerializers()[typeId](this, it, value);                                             \
     }                                                                                                 \
                                                                                                       \
     template<typename T>                                                                              \
     static void RegisterSerializer(bool(*serializer)(Archive*, ArchiveIterator&, void*))              \
     {                                                                                                 \
-        GetSerializers()[detail::type_name<T>()] = serializer;                                        \
+        auto& serializers = GetSerializers();                                                         \
+        if (serializers.find(detail::type_id<T>()) != serializers.end())                              \
+            std::terminate();                                                                         \
+        serializers[detail::type_id<T>()] = serializer;                                               \
     }                                                                                                 \
                                                                                                       \
 private:                                                                                              \
