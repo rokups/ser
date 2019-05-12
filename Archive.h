@@ -187,7 +187,7 @@ public:
 };
 
 // Macro that implements user type serialization in format-specific archives. Simply add this macro to class body.
-#define SER_USER_CONTAINER_BEGIN(Type)                                                                \
+#define SER_USER_CONTAINER(Type)                                                                      \
 public:                                                                                               \
     bool Serialize(ArchiveIterator&& it, const char* typeName, void* value) override                  \
     {                                                                                                 \

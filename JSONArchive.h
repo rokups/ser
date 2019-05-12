@@ -85,7 +85,7 @@ public:
 
     using Iterator = OutputIterator;
 private:
-    SER_USER_CONTAINER_BEGIN(JSONOutputArchive);
+    SER_USER_CONTAINER(JSONOutputArchive);
 public:
 
     JSONOutputArchive() = default;
@@ -116,7 +116,7 @@ class JSONInputArchive : public JSONArchive
 public:
     using Iterator = InputIterator;
 private:
-    SER_USER_CONTAINER_BEGIN(JSONInputArchive);
+    SER_USER_CONTAINER(JSONInputArchive);
 public:
     /// Construct input archive that will read specified json.
     explicit JSONInputArchive(const std::string& json_data);

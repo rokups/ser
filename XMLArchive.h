@@ -85,7 +85,7 @@ public:
     static_assert(sizeof(OutputIterator) <= ArchiveIterator::StorageSize, "ArchiveIterator::storage_ is too small.");
     using Iterator = OutputIterator;
 private:
-SER_USER_CONTAINER_BEGIN(XMLOutputArchive);
+SER_USER_CONTAINER(XMLOutputArchive);
 public:
 
     XMLOutputArchive();
@@ -116,7 +116,7 @@ class XMLInputArchive : public XMLArchive
 public:
     using Iterator = InputIterator;
 private:
-    SER_USER_CONTAINER_BEGIN(XMLInputArchive);
+    SER_USER_CONTAINER(XMLInputArchive);
 public:
     /// Construct input archive that will read specified xml.
     explicit XMLInputArchive(const std::string& xml_data);
